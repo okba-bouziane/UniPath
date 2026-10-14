@@ -14,7 +14,7 @@ Built with **LangGraph**, **LangChain**, **ChromaDB**, local **sentence-transfor
   - `compare_fees(universities)` — builds a fee comparison table parsed straight from the data files
 - **Grounded & cited** — every answer ends with `Sources: file.md`; off-topic or unknown questions get *"I don't have that information in my knowledge base."*
 - **Free local embeddings** (`all-MiniLM-L6-v2`), persisted Chroma vector store
-- **Pluggable LLM** — Anthropic or OpenAI, chosen in `.env`
+- **Pluggable LLM** — Google Gemini, Anthropic or OpenAI, chosen in `.env`
 - **Streamlit chat UI** with chat history, source file browser and example questions
 - **Evaluation script** (10 questions, accuracy score) and a **pytest** suite
 
@@ -37,7 +37,7 @@ flowchart LR
     end
 
     subgraph Agent["LangGraph agent (unipath/agent.py)"]
-        LLM["LLM node<br/>Anthropic / OpenAI"] -- tool call --> TOOLS["Tool node"]
+        LLM["LLM node<br/>Gemini / Anthropic / OpenAI"] -- tool call --> TOOLS["Tool node"]
         TOOLS -- results + [source: file.md] --> LLM
     end
 
@@ -90,11 +90,14 @@ cp .env.example .env   # then add your API key
 In `.env`, set the provider and its key:
 
 ```env
-LLM_PROVIDER=anthropic        # or: openai
-ANTHROPIC_API_KEY=sk-ant-...
+LLM_PROVIDER=google           # or: anthropic, openai
+GOOGLE_API_KEY=...            # free key from https://aistudio.google.com/apikey
+# ANTHROPIC_API_KEY=sk-ant-...
 # OPENAI_API_KEY=sk-...
 # LLM_MODEL=                  # optional override
 ```
+
+Default models: `gemini-3.1-flash-lite` (Google), `claude-haiku-5-5` (Anthropic), `gpt-4o-mini` (OpenAI).
 
 Build the vector store and start the app:
 
@@ -137,14 +140,16 @@ python eval.py --retrieval-only  # no API key: checks the right file is retrieve
 
 `eval.py` asks 10 questions with known answers. A question passes when the answer contains the expected facts **and** cites the expected source file. Two questions are deliberately outside the data (e.g. Oxford fees) and only pass if the agent declines to answer.
 
-Example output format:
+Result with `gemini-3.1-flash-lite`:
 
 ```
 PASS  Q 1: What IELTS score do I need for the International Foundation Year at Kingsford?
-FAIL  Q 2: ...
-        expected: ['14,950'] + eastmere_university.md
-        answer:   ...
-Accuracy: 90% (9/10)
+PASS  Q 2: How much is the tuition fee for the foundation year at the University of Eastmere?
+...
+PASS  Q 9: What is the tuition fee for the University of Oxford foundation year?
+PASS  Q10: What GPA do I need to get into a community college in the United States?
+
+Accuracy: 100% (10/10)
 ```
 
 ## Deploy free on Streamlit Community Cloud
@@ -154,8 +159,8 @@ Accuracy: 90% (9/10)
 3. Pick the repository, branch `main` and main file `app.py`.
 4. Under **Advanced settings**, choose Python **3.11** or **3.12** and paste your secrets:
    ```toml
-   LLM_PROVIDER = "anthropic"
-   ANTHROPIC_API_KEY = "sk-ant-..."
+   LLM_PROVIDER = "google"
+   GOOGLE_API_KEY = "..."
    ```
    (see `.streamlit/secrets.toml.example`)
 5. Click **Deploy**. The first build takes a few minutes because it installs PyTorch and downloads the embedding model.
