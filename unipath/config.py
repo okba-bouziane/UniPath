@@ -31,3 +31,9 @@ DEFAULT_MODELS = {
 
 def llm_model() -> str:
     return os.getenv("LLM_MODEL") or DEFAULT_MODELS.get(LLM_PROVIDER, "")
+
+
+def missing_api_key() -> str | None:
+    """Name of the env var that still needs to be set, or None if ready."""
+    var = f"{LLM_PROVIDER.upper()}_API_KEY"
+    return None if os.getenv(var) else var
