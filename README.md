@@ -137,10 +137,14 @@ python eval.py --retrieval-only  # no API key: checks the right file is retrieve
 
 `eval.py` asks 10 questions with known answers. A question passes when the answer contains the expected facts **and** cites the expected source file. Two questions are deliberately outside the data (e.g. Oxford fees) and only pass if the agent declines to answer.
 
+Example output format:
+
 ```
 PASS  Q 1: What IELTS score do I need for the International Foundation Year at Kingsford?
-...
-Accuracy: 100% (10/10)
+FAIL  Q 2: ...
+        expected: ['14,950'] + eastmere_university.md
+        answer:   ...
+Accuracy: 90% (9/10)
 ```
 
 ## Deploy free on Streamlit Community Cloud
