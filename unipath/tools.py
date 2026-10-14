@@ -36,12 +36,13 @@ def search_knowledge_base(query: str) -> str:
 
     Returns the most relevant text chunks, each tagged with its source file.
     """
-    results = get_store().similarity_search_with_relevance_scores(query, k=config.TOP_K)
-    relevant = [(doc, score) for doc, score in results if score >= config.MIN_RELEVANCE]
+    results = get_store().similarity_search_with_score(query, k=config.TOP_K)
+    # Chroma returns cosine distance; relevance = 1 - distance.
+    relevant = [doc for doc, distance in results if 1 - distance >= config.MIN_RELEVANCE]
     if not relevant:
         return NOT_FOUND
     return "\n\n---\n\n".join(
-        f"[source: {doc.metadata['source']}]\n{doc.page_content}" for doc, _ in relevant
+        f"[source: {doc.metadata['source']}]\n{doc.page_content}" for doc in relevant
     )
 
 
