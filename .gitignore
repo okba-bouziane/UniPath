@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Env / secrets
+.env
+.streamlit/secrets.toml
+
+# Local vector store (rebuilt by ingest.py)
+chroma_db/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
