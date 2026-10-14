@@ -26,7 +26,11 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic").lower()
 DEFAULT_MODELS = {
     "anthropic": "claude-haiku-5-5",
     "openai": "gpt-4o-mini",
+    "google_genai": "gemini-3.1-flash-lite",
 }
+# Friendly aliases accepted in LLM_PROVIDER
+PROVIDER_ALIASES = {"google": "google_genai", "gemini": "google_genai"}
+LLM_PROVIDER = PROVIDER_ALIASES.get(LLM_PROVIDER, LLM_PROVIDER)
 
 
 def llm_model() -> str:
@@ -35,5 +39,5 @@ def llm_model() -> str:
 
 def missing_api_key() -> str | None:
     """Name of the env var that still needs to be set, or None if ready."""
-    var = f"{LLM_PROVIDER.upper()}_API_KEY"
+    var = "GOOGLE_API_KEY" if LLM_PROVIDER == "google_genai" else f"{LLM_PROVIDER.upper()}_API_KEY"
     return None if os.getenv(var) else var

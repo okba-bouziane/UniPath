@@ -42,7 +42,7 @@ table when comparing several universities.
 def get_llm() -> BaseChatModel:
     provider = config.LLM_PROVIDER
     if provider not in config.DEFAULT_MODELS:
-        raise ValueError(f"LLM_PROVIDER must be one of {list(config.DEFAULT_MODELS)}, got '{provider}'")
+        raise ValueError(f"LLM_PROVIDER must be google, anthropic or openai, got '{provider}'")
     return init_chat_model(config.llm_model(), model_provider=provider, temperature=0)
 
 
