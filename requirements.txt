@@ -1,0 +1,22 @@
+# Core
+langchain>=0.3
+langchain-core>=0.3
+langchain-text-splitters>=0.3
+langgraph>=0.2
+
+# Vector store + embeddings (local, free)
+chromadb>=0.5
+langchain-chroma>=0.1
+langchain-huggingface>=0.1
+sentence-transformers>=3.0
+
+# LLM providers (pick one in .env)
+langchain-anthropic>=0.3
+langchain-openai>=0.2
+
+# App
+streamlit>=1.38
+python-dotenv>=1.0
+
+# Dev
+pytest>=8.0
