@@ -30,6 +30,9 @@ EXAMPLE_QUESTIONS = [
     "How much money do I need to show for a Student visa outside London?",
 ]
 
+# Public demos share one free LLM quota, so each browser session gets a fixed budget.
+MAX_QUESTIONS_PER_SESSION = int(os.environ.get("MAX_QUESTIONS_PER_SESSION", "15"))
+
 st.set_page_config(page_title="UniPath AI", page_icon="🎓", layout="centered")
 
 
@@ -43,6 +46,7 @@ def init_state() -> None:
     st.session_state.setdefault("chat", [])     # [{"role", "content", "sources"}] for display
     st.session_state.setdefault("history", [])  # LangChain messages for the agent
     st.session_state.setdefault("pending", None)
+    st.session_state.setdefault("asked", 0)
 
 
 def sidebar() -> None:
@@ -101,6 +105,15 @@ def main() -> None:
     st.session_state.pending = None
     if not question:
         return
+
+    if st.session_state.asked >= MAX_QUESTIONS_PER_SESSION:
+        st.warning(
+            f"This public demo allows {MAX_QUESTIONS_PER_SESSION} questions per session to keep "
+            "the free LLM quota available for everyone. Run it locally for unlimited use.",
+            icon="⏳",
+        )
+        return
+    st.session_state.asked += 1
 
     user_msg = {"role": "user", "content": question}
     st.session_state.chat.append(user_msg)
