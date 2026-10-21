@@ -1,5 +1,7 @@
 # 🎓 UniPath AI
 
+**Live demo:** https://unipath-okba.streamlit.app (sample data; 15 questions per session; the app sleeps when idle, so the first load can take a minute).
+
 **A RAG chatbot that answers questions about UK university pathway programmes for Algerian students** — foundation years, International Year One, pre-master's, entry requirements, IELTS scores, fees, deadlines, scholarships and visas.
 
 Built with **LangGraph**, **LangChain**, **ChromaDB**, local **sentence-transformers** embeddings and **Streamlit**. Every answer cites the file it came from, and when the answer isn't in the knowledge base the assistant says so instead of guessing.
