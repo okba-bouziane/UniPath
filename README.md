@@ -20,11 +20,11 @@ Built with **LangGraph**, **LangChain**, **ChromaDB**, local **sentence-transfor
 
 ## Screenshots
 
-| Chat | Fee comparison |
+| Chat with a cited answer | Fee comparison |
 |---|---|
 | ![Chat](docs/screenshots/chat.png) | ![Fee comparison](docs/screenshots/compare-fees.png) |
 
-<!-- Add your screenshots to docs/screenshots/ with these file names. -->
+![Source files in the sidebar](docs/screenshots/sources.png)
 
 ## Architecture
 
@@ -95,9 +95,19 @@ GOOGLE_API_KEY=...            # free key from https://aistudio.google.com/apikey
 # ANTHROPIC_API_KEY=sk-ant-...
 # OPENAI_API_KEY=sk-...
 # LLM_MODEL=                  # optional override
+# OPENAI_BASE_URL=            # optional: OpenAI-compatible endpoint (openai provider only)
 ```
 
 Default models: `gemini-3.1-flash-lite` (Google), `claude-haiku-5-5` (Anthropic), `gpt-4o-mini` (OpenAI).
+
+To run on any OpenAI-compatible API such as Groq, use the `openai` provider with a base URL, for example:
+
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=<your Groq key>
+OPENAI_BASE_URL=https://api.groq.com/openai/v1
+LLM_MODEL=openai/gpt-oss-20b
+```
 
 Build the vector store and start the app:
 

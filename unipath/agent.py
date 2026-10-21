@@ -3,6 +3,7 @@
     START -> agent --(tool calls?)--> tools -> agent ... -> END
 """
 
+import os
 import re
 
 from langchain.chat_models import init_chat_model
@@ -43,7 +44,12 @@ def get_llm() -> BaseChatModel:
     provider = config.LLM_PROVIDER
     if provider not in config.DEFAULT_MODELS:
         raise ValueError(f"LLM_PROVIDER must be google, anthropic or openai, got '{provider}'")
-    return init_chat_model(config.llm_model(), model_provider=provider, temperature=0)
+    kwargs = {}
+    base_url = os.getenv("OPENAI_BASE_URL")
+    if provider == "openai" and base_url:
+        # Any OpenAI-compatible endpoint (Groq, Together, a local server...)
+        kwargs["base_url"] = base_url
+    return init_chat_model(config.llm_model(), model_provider=provider, temperature=0, **kwargs)
 
 
 def build_agent(llm: BaseChatModel | None = None):
