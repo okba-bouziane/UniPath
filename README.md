@@ -17,7 +17,7 @@ Built with **LangGraph**, **LangChain**, **ChromaDB**, local **sentence-transfor
 - **Grounded & cited** — every answer ends with `Sources: file.md`; off-topic or unknown questions get *"I don't have that information in my knowledge base."*
 - **Free local embeddings** (`all-MiniLM-L6-v2`), persisted Chroma vector store
 - **Pluggable LLM** — Google Gemini, Anthropic or OpenAI, chosen in `.env`
-- **Streamlit chat UI** with chat history, source file browser and example questions
+- **Streamlit chat UI** with chat history, source chips under each answer, a source file browser, example questions and a per-session question limit
 - **Evaluation script** (10 questions, accuracy score) and a **pytest** suite
 
 ## Screenshots
@@ -67,9 +67,10 @@ UniPath/
 ├── unipath/
 │   ├── config.py           # Settings from .env
 │   ├── ingestion.py        # Load, chunk, embed, store
-│   ├── fees.py             # Parse fee tables from markdown
+│   ├── fees.py             # Parse and format fee tables from markdown
 │   ├── tools.py            # search_knowledge_base, compare_fees
-│   └── agent.py            # LangGraph graph + system prompt
+│   ├── agent.py            # LangGraph graph + system prompt
+│   └── style.css           # Streamlit UI styles
 ├── tests/                  # pytest suite
 ├── .streamlit/             # Theme + secrets template
 ├── requirements.txt

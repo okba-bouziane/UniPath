@@ -22,7 +22,6 @@ TOP_K = 4
 MIN_RELEVANCE = 0.3
 
 # LLM
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic").lower()
 DEFAULT_MODELS = {
     "anthropic": "claude-haiku-5-5",
     "openai": "gpt-4o-mini",
@@ -30,7 +29,12 @@ DEFAULT_MODELS = {
 }
 # Friendly aliases accepted in LLM_PROVIDER
 PROVIDER_ALIASES = {"google": "google_genai", "gemini": "google_genai"}
-LLM_PROVIDER = PROVIDER_ALIASES.get(LLM_PROVIDER, LLM_PROVIDER)
+_provider = os.getenv("LLM_PROVIDER", "anthropic").lower()
+LLM_PROVIDER = PROVIDER_ALIASES.get(_provider, _provider)
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")  # any OpenAI-compatible endpoint
+
+# Public demos share one free LLM quota, so each browser session gets a fixed budget.
+MAX_QUESTIONS_PER_SESSION = int(os.getenv("MAX_QUESTIONS_PER_SESSION", "15"))
 
 
 def llm_model() -> str:

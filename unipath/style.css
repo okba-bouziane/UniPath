@@ -1,0 +1,34 @@
+/* Layout: tighter top padding, comfortable reading width, small-screen gutters */
+.block-container { padding-top: 2rem; padding-bottom: 6rem; max-width: 52rem; }
+@media (max-width: 640px) {
+  .block-container { padding-left: 1rem; padding-right: 1rem; padding-top: 1rem; }
+  h1 { font-size: 1.6rem !important; }
+}
+
+/* Header */
+.up-hero h1 { margin: 0 0 .25rem; font-size: 2rem; line-height: 1.2; }
+.up-hero p { margin: 0 0 1rem; color: #475569; }
+
+/* Chat messages: user messages as a soft bubble, answers on a plain background */
+[data-testid="stChatMessage"] { padding: .75rem 0; gap: .75rem; }
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+  background: #F1F5F9; border-radius: .75rem; padding: .75rem 1rem;
+}
+[data-testid="stChatMessage"] table { font-size: .9rem; }
+[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] { overflow-x: auto; }
+
+/* Sources shown under an answer */
+.up-sources { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin-top: .5rem; }
+.up-sources-label { font-size: .8rem; color: #475569; }
+.up-chip {
+  font-size: .78rem; padding: .1rem .55rem; border-radius: 999px;
+  background: #E6F4F1; color: #115E59; border: 1px solid #B7E0DA; word-break: break-all;
+}
+
+/* Empty state */
+.up-empty { text-align: center; color: #475569; padding: 1rem 0 .5rem; }
+.up-empty strong { color: #0F172A; }
+
+/* Sidebar: long source files scroll inside their expander instead of stretching the page */
+[data-testid="stSidebar"] [data-testid="stExpander"] details > div { max-height: 22rem; overflow-y: auto; }
+[data-testid="stSidebar"] [data-testid="stExpander"] summary p { word-break: break-all; }

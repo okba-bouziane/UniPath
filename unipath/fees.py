@@ -73,3 +73,25 @@ def match_universities(queries: list[str], known: list[str]) -> tuple[list[str],
         elif hit not in matched:
             matched.append(hit)
     return matched, unknown
+
+
+def format_comparison(rows: list[FeeRow]) -> str:
+    """Markdown table of the given rows plus a 'cheapest' line per programme."""
+    rows = sorted(rows, key=lambda r: (r.programme, r.tuition_gbp))
+    lines = [
+        "| University | Programme | Tuition fee (GBP) | Deposit (GBP) | Source |",
+        "|---|---|---|---|---|",
+    ]
+    lines += [
+        f"| {r.university} | {r.programme} | £{r.tuition_gbp:,} | £{r.deposit_gbp:,} "
+        f"| [source: {r.source}] |"
+        for r in rows
+    ]
+    for programme in sorted({r.programme for r in rows}):
+        options = [r for r in rows if r.programme == programme]
+        if len(options) > 1:
+            cheapest = min(options, key=lambda r: r.tuition_gbp)
+            lines.append(
+                f"\nCheapest {programme}: {cheapest.university} (£{cheapest.tuition_gbp:,})."
+            )
+    return "\n".join(lines)

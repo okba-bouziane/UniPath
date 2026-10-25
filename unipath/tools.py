@@ -4,7 +4,7 @@ from langchain_chroma import Chroma
 from langchain_core.tools import tool
 
 from unipath import config
-from unipath.fees import load_fee_table, match_universities
+from unipath.fees import format_comparison, load_fee_table, match_universities
 from unipath.ingestion import build_vectorstore, get_vectorstore, is_empty
 
 NOT_FOUND = "NO_RELEVANT_RESULTS: the knowledge base has no information about this."
@@ -59,32 +59,16 @@ def compare_fees(universities: list[str]) -> str:
     else:
         selected, unknown = known, []
 
-    lines = []
-    if selected:
-        lines.append("| University | Programme | Tuition fee (GBP) | Deposit (GBP) | Source |")
-        lines.append("|---|---|---|---|---|")
-        chosen = sorted(
-            (r for r in rows if r.university in selected),
-            key=lambda r: (r.programme, r.tuition_gbp),
-        )
-        for r in chosen:
-            lines.append(
-                f"| {r.university} | {r.programme} | £{r.tuition_gbp:,} | £{r.deposit_gbp:,} "
-                f"| [source: {r.source}] |"
-            )
-        for programme in sorted({r.programme for r in chosen}):
-            options = [r for r in chosen if r.programme == programme]
-            if len(options) > 1:
-                cheapest = min(options, key=lambda r: r.tuition_gbp)
-                lines.append(
-                    f"\nCheapest {programme}: {cheapest.university} (£{cheapest.tuition_gbp:,})."
-                )
+    sections = []
+    chosen = [r for r in rows if r.university in selected]
+    if chosen:
+        sections.append(format_comparison(chosen))
     if unknown:
-        lines.append(
-            f"\nNO_RELEVANT_RESULTS for: {', '.join(unknown)}. "
+        sections.append(
+            f"NO_RELEVANT_RESULTS for: {', '.join(unknown)}. "
             f"Known universities: {', '.join(known)}."
         )
-    return "\n".join(lines) if lines else NOT_FOUND
+    return "\n\n".join(sections) or NOT_FOUND
 
 
 TOOLS = [search_knowledge_base, compare_fees]

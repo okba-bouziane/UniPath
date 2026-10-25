@@ -3,7 +3,6 @@
     START -> agent --(tool calls?)--> tools -> agent ... -> END
 """
 
-import os
 import re
 
 from langchain.chat_models import init_chat_model
@@ -15,6 +14,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from unipath import config
 from unipath.tools import TOOLS
 
+SOURCE_TAG = re.compile(r"\[source: ([^\]]+)\]")
 NO_ANSWER = "I don't have that information in my knowledge base."
 
 SYSTEM_PROMPT = f"""You are UniPath AI, an assistant that helps Algerian students understand \
@@ -45,10 +45,8 @@ def get_llm() -> BaseChatModel:
     if provider not in config.DEFAULT_MODELS:
         raise ValueError(f"LLM_PROVIDER must be google, anthropic or openai, got '{provider}'")
     kwargs = {}
-    base_url = os.getenv("OPENAI_BASE_URL")
-    if provider == "openai" and base_url:
-        # Any OpenAI-compatible endpoint (Groq, Together, a local server...)
-        kwargs["base_url"] = base_url
+    if provider == "openai" and config.OPENAI_BASE_URL:
+        kwargs["base_url"] = config.OPENAI_BASE_URL  # Groq, Together, a local server...
     return init_chat_model(config.llm_model(), model_provider=provider, temperature=0, **kwargs)
 
 
@@ -79,22 +77,26 @@ def message_text(message: BaseMessage) -> str:
     )
 
 
+def retrieved_sources(messages: list[BaseMessage]) -> list[str]:
+    """Source files cited in tool results, in order of first appearance."""
+    found = (
+        source
+        for msg in messages
+        if isinstance(msg, ToolMessage)
+        for source in SOURCE_TAG.findall(message_text(msg))
+    )
+    return list(dict.fromkeys(found))
+
+
 def ask(agent, question: str, history: list[BaseMessage] | None = None) -> dict:
     """Run one turn. Returns the answer, the files the tools retrieved, and the new history."""
     history = list(history or [])
     result = agent.invoke({"messages": [*history, HumanMessage(question)]})
     new_messages = result["messages"][len(history):]
 
-    retrieved: list[str] = []
-    for msg in new_messages:
-        if isinstance(msg, ToolMessage):
-            for source in re.findall(r"\[source: ([^\]]+)\]", message_text(msg)):
-                if source not in retrieved:
-                    retrieved.append(source)
-
     final = next(m for m in reversed(new_messages) if isinstance(m, AIMessage))
     return {
         "answer": message_text(final),
-        "retrieved_sources": retrieved,
+        "retrieved_sources": retrieved_sources(new_messages),
         "messages": result["messages"],
     }

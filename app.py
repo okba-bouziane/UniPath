@@ -4,6 +4,8 @@ Run with:  streamlit run app.py
 """
 
 import os
+from html import escape
+from pathlib import Path
 
 import streamlit as st
 
@@ -13,13 +15,15 @@ try:
     for key, value in st.secrets.items():
         if isinstance(value, str):
             os.environ.setdefault(key, value)
-except Exception:  # no secrets file locally — .env is used instead
+except Exception:  # no secrets file locally; .env is used instead
     pass
 
 from unipath import config  # noqa: E402
 from unipath.agent import ask, build_agent  # noqa: E402
 from unipath.ingestion import list_source_files  # noqa: E402
 from unipath.tools import get_store  # noqa: E402
+
+STYLE_FILE = Path(__file__).parent / "unipath" / "style.css"
 
 EXAMPLE_QUESTIONS = [
     "What IELTS score do I need for the foundation year at Kingsford?",
@@ -29,9 +33,6 @@ EXAMPLE_QUESTIONS = [
     "Are there scholarships for Algerian students?",
     "How much money do I need to show for a Student visa outside London?",
 ]
-
-# Public demos share one free LLM quota, so each browser session gets a fixed budget.
-MAX_QUESTIONS_PER_SESSION = int(os.environ.get("MAX_QUESTIONS_PER_SESSION", "15"))
 
 st.set_page_config(page_title="UniPath AI", page_icon="🎓", layout="centered")
 
@@ -49,18 +50,26 @@ def init_state() -> None:
     st.session_state.setdefault("asked", 0)
 
 
-def sidebar() -> None:
+def questions_left() -> int:
+    return max(config.MAX_QUESTIONS_PER_SESSION - st.session_state.asked, 0)
+
+
+def clear_chat() -> None:
+    st.session_state.chat, st.session_state.history = [], []
+
+
+def queue_question(question: str) -> None:
+    st.session_state.pending = question
+
+
+def render_sidebar() -> None:
     with st.sidebar:
         st.title("🎓 UniPath AI")
         st.caption("UK pathway programmes for Algerian students")
 
-        with st.popover("💡 Example questions", use_container_width=True):
-            for q in EXAMPLE_QUESTIONS:
-                if st.button(q, key=f"ex_{q}", use_container_width=True):
-                    st.session_state.pending = q
-
-        if st.button("🧹 Clear chat", use_container_width=True):
-            st.session_state.chat, st.session_state.history = [], []
+        st.button("🧹 Clear chat", on_click=clear_chat, use_container_width=True,
+                  disabled=not st.session_state.chat)
+        st.caption(f"Questions left in this session: **{questions_left()}**")
 
         st.subheader("Source files")
         for path in list_source_files():
@@ -72,73 +81,104 @@ def sidebar() -> None:
         st.caption(f"Embeddings: `{config.EMBEDDING_MODEL.split('/')[-1]}` (local)")
 
 
+def render_sources(sources: list[str]) -> None:
+    chips = "".join(f'<span class="up-chip">{escape(s)}</span>' for s in sources)
+    st.markdown(
+        f'<div class="up-sources"><span class="up-sources-label">Sources retrieved:</span>{chips}</div>',
+        unsafe_allow_html=True,
+    )
+
+
 def render_message(message: dict) -> None:
-    with st.chat_message(message["role"], avatar="🎓" if message["role"] == "assistant" else None):
+    is_assistant = message["role"] == "assistant"
+    with st.chat_message(message["role"], avatar="🎓" if is_assistant else None):
         st.markdown(message["content"])
         if message.get("sources"):
-            st.caption("Retrieved from: " + ", ".join(f"`{s}`" for s in message["sources"]))
+            render_sources(message["sources"])
 
 
-def main() -> None:
-    init_state()
-    sidebar()
+def render_empty_state() -> None:
+    st.markdown(
+        '<div class="up-empty"><strong>Not sure where to start?</strong><br>'
+        "Pick a question below, or type your own.</div>",
+        unsafe_allow_html=True,
+    )
+    for question in EXAMPLE_QUESTIONS:
+        st.button(question, key=f"ex_{question}", on_click=queue_question, args=(question,),
+                  use_container_width=True)
 
-    st.header("Ask about UK university pathways")
+
+def render_notices() -> None:
     st.info(
-        "All universities and figures in this demo are **sample data** — always check the "
+        "All universities and figures in this demo are **sample data**. Always check the "
         "official university website before applying.",
         icon="ℹ️",
     )
-
     if missing := config.missing_api_key():
         st.warning(
             f"`{missing}` is not set. Add it to `.env` (local) or to the app's Secrets "
             "(Streamlit Cloud) to start chatting.",
             icon="🔑",
         )
-
-    for message in st.session_state.chat:
-        render_message(message)
-
-    question = st.chat_input("e.g. What IELTS score do I need for a foundation year?")
-    question = question or st.session_state.pending
-    st.session_state.pending = None
-    if not question:
-        return
-
-    if st.session_state.asked >= MAX_QUESTIONS_PER_SESSION:
+    if questions_left() == 0:
         st.warning(
-            f"This public demo allows {MAX_QUESTIONS_PER_SESSION} questions per session to keep "
-            "the free LLM quota available for everyone. Run it locally for unlimited use.",
+            f"This public demo allows {config.MAX_QUESTIONS_PER_SESSION} questions per session "
+            "to keep the free LLM quota available for everyone. Run it locally for unlimited use.",
             icon="⏳",
         )
-        return
-    st.session_state.asked += 1
 
-    user_msg = {"role": "user", "content": question}
-    st.session_state.chat.append(user_msg)
-    render_message(user_msg)
+
+def answer_question(question: str) -> None:
+    st.session_state.asked += 1
+    user_message = {"role": "user", "content": question}
+    st.session_state.chat.append(user_message)
+    render_message(user_message)
 
     with st.spinner("Searching the knowledge base…"):
         try:
             result = ask(load_agent(), question, st.session_state.history)
         except Exception as exc:
-            st.error(
-                f"Could not get an answer: {exc}\n\n"
-                "Check that `LLM_PROVIDER` and the matching API key are set in `.env` "
-                "(or in Streamlit secrets)."
-            )
+            st.session_state.asked -= 1  # a failed call should not use up the budget
             st.session_state.chat.pop()
+            st.error(
+                "Could not get an answer. Check that `LLM_PROVIDER` and the matching API key "
+                "are set in `.env` (or in Streamlit secrets), then try again.",
+                icon="⚠️",
+            )
+            with st.expander("Error details"):
+                st.code(str(exc))
             return
 
     st.session_state.history = result["messages"]
-    bot_msg = {
-        "role": "assistant",
-        "content": result["answer"],
-        "sources": result["retrieved_sources"],
-    }
-    st.session_state.chat.append(bot_msg)
-    render_message(bot_msg)
+    st.session_state.chat.append(
+        {"role": "assistant", "content": result["answer"], "sources": result["retrieved_sources"]}
+    )
+    st.rerun()  # redraw so the sidebar counter and empty state reflect the new turn
+
+
+def main() -> None:
+    st.markdown(f"<style>{STYLE_FILE.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
+    init_state()
+    render_sidebar()
+
+    st.markdown(
+        '<div class="up-hero"><h1>Ask about UK university pathways</h1>'
+        "<p>Foundation years, entry requirements, IELTS, fees, deadlines, scholarships and visas.</p></div>",
+        unsafe_allow_html=True,
+    )
+    render_notices()
+
+    can_ask = not config.missing_api_key() and questions_left() > 0
+    typed = st.chat_input("Ask about IELTS, fees, deadlines…", disabled=not can_ask)
+    question, st.session_state.pending = typed or st.session_state.pending, None
+    question = question if can_ask else None
+
+    for message in st.session_state.chat:
+        render_message(message)
+    if question:
+        answer_question(question)
+    elif not st.session_state.chat:
+        render_empty_state()
 
 
 main()
