@@ -1,5 +1,7 @@
 # 🎓 UniPath AI
 
+[![CI](https://github.com/okba-bouziane/UniPath/actions/workflows/ci.yml/badge.svg)](https://github.com/okba-bouziane/UniPath/actions/workflows/ci.yml)
+
 **Live demo:** https://unipath-okba.streamlit.app (sample data; 15 questions per session; the app sleeps when idle, so the first load can take a minute).
 
 **A RAG chatbot that answers questions about UK university pathway programmes for Algerian students** — foundation years, International Year One, pre-master's, entry requirements, IELTS scores, fees, deadlines, scholarships and visas.
